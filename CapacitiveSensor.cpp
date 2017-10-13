@@ -158,7 +158,7 @@ int CapacitiveSensor::SenseOneCycle(void)
 	DIRECT_MODE_INPUT(rReg, rBit);	// receivePin to input (pullups are off)
 	DIRECT_MODE_OUTPUT(rReg, rBit); // receivePin to OUTPUT
 	DIRECT_WRITE_LOW(rReg, rBit);	// pin is now LOW AND OUTPUT
-	delayMicroseconds(100);
+	delayMicroseconds(10);
 	DIRECT_MODE_INPUT(rReg, rBit);	// receivePin to input (pullups are off)
 	DIRECT_WRITE_HIGH(sReg, sBit);	// sendPin High
     interrupts();
