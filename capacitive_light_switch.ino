@@ -74,32 +74,38 @@ void loop()
       isTouched = false;
       analogWrite(TOUCHPIN, LOW);
     }
-    else if (isReceding) {
-      curBrightness = getBrightness(false);
-      isApproaching = false;
-      if (curBrightness == 0) {
-        isReceding = false;
-      }
+    else if (isApproaching && curBrightness < brightnessCount - 1) {
+      isReceding = false;
+      curBrightness = getBrightness(true);
       Serial.print("B ");
       Serial.print(curBrightness);
       Serial.print(" ");
       isTouched = false;
       analogWrite(TOUCHPIN, LOW);
     }
-    else if (isApproaching && lastCap - total1 > 200) {
+    else if (isApproaching && total1 < 200) {
       isApproaching = false;
       isReceding = true;
-      curBrightness = getBrightness(false);
       Serial.print("C ");
       Serial.print(curBrightness);
       Serial.print(" ");
       isTouched = false;
       analogWrite(TOUCHPIN, LOW);
     }
-    else if (isApproaching) {
-      isReceding = false;
-      curBrightness = getBrightness(true);
+    else if (isReceding && curBrightness > 0) {
+      isReceding = true;
+      isApproaching = false;
+      curBrightness = getBrightness(false);
       Serial.print("D ");
+      Serial.print(curBrightness);
+      Serial.print(" ");
+      isTouched = false;
+      analogWrite(TOUCHPIN, LOW);
+    }
+    else if (isReceding) {
+      isReceding = false;
+      isApproaching = false;
+      Serial.print("E ");
       Serial.print(curBrightness);
       Serial.print(" ");
       isTouched = false;
