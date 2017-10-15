@@ -1,15 +1,20 @@
 #include "CapacitiveSensor.h"
-//#define __NOCALIBRATE__
-#define SENDPIN    4
-#define SENSEPIN   2
+#include "RunningStatistics.h"
+
+#define __NOCALIBRATE__
+#define SENDPIN    2
+#define SENSEPIN   4
 #define LEDPIN     6
 #define TOUCHPIN   8
 #define SAMPLINGS 40
+#define RSLENGTH  40
 
 CapacitiveSensor capSense = CapacitiveSensor(SENDPIN, SENSEPIN);        // 10M resistor between pins 4 & 2, pin 2 is sensor pin, add a wire and or foil if desired
+RunningStatistics statistics = RunningStatistics(RSLENGTH);
 
 long touchCap = 1000;
 long lastCap;
+long index = 0;
 boolean isApproaching = false;
 boolean isReceding = false;
 int brightness[] = {0, 1, 3, 7, 15, 33, 65, 127, 255};
@@ -17,6 +22,9 @@ int brightnessCount = 8;
 int curBrightness = 0;
 unsigned long lastTouch = 0;
 boolean isTouched = false;
+
+float lastAvg = 0;
+float lastDev = 0;
 
 void setup()                    
 {
@@ -29,6 +37,7 @@ void setup()
   analogWrite(LEDPIN, LOW);
   analogWrite(TOUCHPIN, LOW);
   lastCap = capSense.capacitiveSensor(SAMPLINGS);
+  statistics.fillValue(lastCap, RSLENGTH);
 }
 
 int getBrightness(boolean increasing) {
@@ -41,21 +50,20 @@ int getBrightness(boolean increasing) {
   return curBrightness;
 }
 
-void blinkLed(int cnt) {
-  for (int i = 0; i < cnt; i++) {
-    analogWrite(LEDPIN, 0);
-    delay(100);
-    analogWrite(LEDPIN, curBrightness);
-    delay(100);
-  }
-}
-
 void loop()                    
 {
     long start = millis();
     long total1 =  capSense.capacitiveSensor(SAMPLINGS);
     long duration = millis() - start;
 
+    if  (index > RSLENGTH && (total1 - lastAvg) / lastDev > 3.0)
+    {
+        Serial.println("SOMETHING HAPPENED");
+    }
+    else {
+        statistics.addValue(total1);
+    }
+    
     if (total1 - lastCap > touchCap) {
       isApproaching = true;
       curBrightness = brightnessCount;
@@ -117,13 +125,29 @@ void loop()
     }
     analogWrite(LEDPIN, brightness[curBrightness]);
 
+    Serial.print(index++);        // print sensor output 1
+    Serial.print("\t");            // tab character for debug windown spacing
     Serial.print(duration);        // check on performance in milliseconds
     Serial.print("\t");            // tab character for debug windown spacing
     Serial.print(total1);        // print sensor output 1
     Serial.print("\t");            // tab character for debug windown spacing
+    float avg = statistics.getAverage();
+    Serial.print(avg);
+    Serial.print("\t");            // tab character for debug windown spacing
+    float sd = statistics.getStandardDeviation();
+    Serial.print(sd);
+    Serial.print("\t");            // tab character for debug windown spacing
+    float devs = (total1 - avg) / sd;
+    Serial.print(devs);
+//    if (devs < -2.0) Serial.print("\tBYE!");
+    if (devs > 4.0) Serial.print("\tHELLO!");
+    if (devs > 4.0) Serial.print("\tHELLO!");
+
     Serial.println("");
     
     lastCap = total1;
-    delay(10);                     // arbitrary delay to limit data to serial port 
+    lastDev = sd;
+    lastAvg = avg;
+    delay(50);                     // arbitrary delay to limit data to serial port 
 }
 
